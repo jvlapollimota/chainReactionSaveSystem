@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Text;
+using Newtonsoft.Json;
 using UnityEngine;
 
 public static class SaveSystem
@@ -17,7 +19,7 @@ public static class SaveSystem
 	public static OnSaveGameHandler OnSaveSucessfully;
 
 
-	public static void SaveGame(bool invokeEvent = true)
+	public static void SaveGame(bool invokeListeners = true)
 	{
 		if (!isInitialized)
 		{
@@ -25,9 +27,9 @@ public static class SaveSystem
 		}
 
 		localData.lastSavedTime = ($"{DateTime.UtcNow}");
-		string json = JsonUtility.ToJson(localData);
+		string json = JsonConvert.SerializeObject(localData);
 		File.WriteAllText(savePath + "/" + saveName + ".json", json);
-		if (invokeEvent)
+		if (invokeListeners)
 		{
 			Debug.Log($"<color=magenta> SaveSystem </color> Save");
 			OnSaveSucessfully?.Invoke(localData);
@@ -39,12 +41,13 @@ public static class SaveSystem
 		if (!isInitialized)
 		{
 			InitializeSaveSystem();
+			return;
 		}
 
 		if (Directory.Exists(savePath) && File.Exists(savePath + "/" + saveName + ".json"))
 		{
 			string json = File.ReadAllText(savePath + "/" + saveName + ".json");
-			localData = JsonUtility.FromJson<SaveData>(json);
+			localData = ConvertToSaveData(json);
 			Debug.Log($"<color=magenta> SaveSystem </color> loaded existing save from {savePath + "/"}");
 			localData.saveFileLocation = $"{savePath}/{saveName}.json";
 			OnSaveLoaded?.Invoke(localData);
@@ -57,16 +60,14 @@ public static class SaveSystem
 				Directory.CreateDirectory(savePath);
 			}
 			localData = SetupNewSaveFile();
-			string jsonFile = JsonUtility.ToJson(localData);
-			File.WriteAllText(savePath + "/" + saveName + ".json", jsonFile);
-			Debug.Log($"<color=magenta> SaveSystem </color> loaded <color=white>clean</color> save from {savePath + "/"}");
+			Debug.Log($"<color=magenta> SaveSystem </color> Creating and loading a <color=white>clean</color> save in {savePath + "/"}");
 			localData.saveFileLocation = $"{savePath}/{saveName}.json";
 			SaveGame(false);
 			OnCleanSaveLoaded?.Invoke(localData);
 		}
 	}
 
-	public static void ClearSavedData()
+	public static void ClearSavedData(bool loadCleanSave = true)
 	{
 		if (!isInitialized)
 		{
@@ -78,17 +79,14 @@ public static class SaveSystem
 			if (File.Exists(savePath + "/" + saveName + ".json"))
 			{
 				Debug.Log($"<color=magenta> SaveSystem </color> Deleted Save in {savePath + "/"}");
-				Debug.Log($"<color=magenta> SaveSystem </color> Loading a Clean save...");
 				File.Delete(savePath + "/" + saveName + ".json");
 			}
 		}
-
-		LoadGame();
-	}
-
-	public static string GetSaveDataString()
-	{
-		return JsonUtility.ToJson(localData);
+		if (loadCleanSave)
+		{
+			Debug.Log($"<color=magenta> SaveSystem </color> Loading a Clean save...");
+			LoadGame();
+		}
 	}
 
 	public static void OverrideSaveData(string jsonSaveDataType)
@@ -97,6 +95,13 @@ public static class SaveSystem
 		LoadGame();
 	}
 
+	public static void OverrideSaveData(SaveData newSaveData)
+	{
+		localData = newSaveData;
+		SaveGame();
+		LoadGame();
+	}
+	
 	private static void InitializeSaveSystem()
 	{
 		savePath = Application.persistentDataPath;
@@ -111,6 +116,21 @@ public static class SaveSystem
 		//Here you set the default values of any save Data
 
 		return newSaveFile;
+	}
+	
+	public static SaveData ConvertToSaveData(string jsonString)
+	{
+		return JsonConvert.DeserializeObject<SaveData>(jsonString);
+	}
+	
+	public static string ConvertSaveDataToJson(SaveData saveData = null)
+	{
+		if (saveData != null)
+		{
+			return JsonConvert.SerializeObject(saveData);
+		}
+		
+		return JsonConvert.SerializeObject(localData);
 	}
 	public static SaveData Data
 	{
