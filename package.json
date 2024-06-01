@@ -2,8 +2,21 @@
   "displayName": "Bio Save System",
   "name": "com.chainreactioninteractive.biosavesystem",
   "unity": "2022.3",
-  "description": "Basic Json Save System",
-  "version": "0.1.0",
-  "dependencies": {
-  }
+  "description": "Simple Json Save System",
+  "version": "1.0.0",
+  "samples": [
+    {
+      "displayName": "Usage Sample",
+      "description": "most basic usage of the save system",
+      "path": "Samples~/BasicUsage"
+    },
+    {
+      "displayName": "Unity Cloud Integration",
+      "description": "Using Unity Cloud Save service to have cloud save",
+      "path": "Samples~/UnityCloudIntegration",
+      "dependencies": {
+        "com.unity.services.cloudsave": "3.2.0"
+      }
+    }
+  ]
 }
